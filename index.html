@@ -1525,81 +1525,474 @@ function StepYourInfo({ data, onChange, onNext }) {
   );
 }
 
-// ── Step 2: Your Dog ─────────────────────────────────────────
-function StepYourDog({ data, onChange, onNext, onBack }) {
-  const breeds = [
-    { value: '', label: 'Select breed' },
-    { value: 'Golden Retriever', label: 'Golden Retriever' },
-    { value: 'Labrador Retriever', label: 'Labrador Retriever' },
-    { value: 'German Shepherd', label: 'German Shepherd' },
-    { value: 'Poodle', label: 'Poodle' },
-    { value: 'Shiba Inu', label: 'Shiba Inu' },
-    { value: 'French Bulldog', label: 'French Bulldog' },
-    { value: 'Beagle', label: 'Beagle' },
-    { value: 'Siberian Husky', label: 'Siberian Husky' },
-    { value: 'Dachshund', label: 'Dachshund' },
-    { value: 'Maltese', label: 'Maltese' },
-    { value: 'Corgi', label: 'Corgi' },
-    { value: 'Other', label: 'Other' },
-  ];
-  const sizes = ['Small (< 10 kg)', 'Medium (10–25 kg)', 'Large (> 25 kg)'];
-  const valid = data.dogName && data.breed && data.size;
+// ── Step 2: Add Your Pet (full 5-sub-step flow) ──────────────
+function StepAddPet({ onNext, onBack, onSkip }) {
+  const [subStep, setSubStep] = useState(1);
+  const TOTAL = 5;
+
+  // Pet state
+  const [pet, setPet] = useState({
+    photoDataUrl: null, name: '', breed: '', gender: null,
+    weight: '', dob: '', coat: '',
+    fixed: null, allergies: '', diet: '', conditions: '',
+    energy: null, socialTags: [], playTags: [], behavTags: [], notes: '',
+    ecUseOwner: false, ecName: '', ecRel: '', ecPhone: '',
+    vetUseOwner: false, vetClinic: '', vetName: '', vetPhone: '',
+  });
+  const [photoFile, setPhotoFile] = useState(null);
+
+  const upd = (key, val) => setPet(p => ({ ...p, [key]: val }));
+  const toggleTag = (key, val) => setPet(p => ({
+    ...p, [key]: p[key].includes(val) ? p[key].filter(x => x !== val) : [...p[key], val],
+  }));
+
+  const subTitles = ['', 'Add your pet', 'Health info', 'Personality', 'Emergency & vet', 'Review & confirm'];
+  const subSubs   = ['', "Let's start with the basics", 'Health stats & medical notes', 'What makes them unique?', 'Who do we call in an emergency?', 'Check everything looks right'];
+
+  const step1Valid = pet.name && pet.breed && pet.gender && pet.weight && pet.dob;
+  const step4Valid = pet.ecUseOwner || (pet.ecName && pet.ecPhone);
+
+  const goSub = (n) => { setSubStep(n); };
+  const nextSub = () => {
+    if (subStep < TOTAL) { setSubStep(s => s + 1); }
+    else { onNext(pet); }
+  };
+  const backSub = () => {
+    if (subStep === 1) onBack();
+    else setSubStep(s => s - 1);
+  };
+
+  const handlePhoto = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      upd('photoDataUrl', ev.target.result);
+      setPhotoFile(file);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Chip component
+  const Chip = ({ label, selected, onClick, amber }) => (
+    <div onClick={onClick} style={{
+      padding: '8px 14px', borderRadius: 100, cursor: 'pointer',
+      border: `1.5px solid ${selected ? (amber ? '#FFB703' : '#16A34A') : '#E7E8E9'}`,
+      background: selected ? (amber ? '#FEF3C7' : '#DCFCE7') : '#fff',
+      color: selected ? (amber ? '#92400E' : '#065F46') : '#515E74',
+      fontSize: 13, fontWeight: selected ? 600 : 400,
+      fontFamily: 'Plus Jakarta Sans, sans-serif',
+      transition: 'all .15s', flexShrink: 0,
+    }}>{label}</div>
+  );
+
+  // Tag component (for personality)
+  const Tag = ({ label, selected, onClick }) => (
+    <div onClick={onClick} style={{
+      padding: '7px 12px', borderRadius: 10, cursor: 'pointer',
+      border: `1.5px solid ${selected ? '#16A34A' : '#E7E8E9'}`,
+      background: selected ? '#DCFCE7' : '#F2F3F4',
+      color: selected ? '#065F46' : '#515E74',
+      fontSize: 12, fontWeight: selected ? 600 : 400,
+      fontFamily: 'Plus Jakarta Sans, sans-serif',
+      transition: 'all .15s',
+    }}>{label}</div>
+  );
+
+  // Toggle component (for EC / vet)
+  const Toggle = ({ on, onToggle, label }) => (
+    <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
+      <span style={{ fontSize: 11, color: '#515E74', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{label}</span>
+      <div style={{
+        width: 36, height: 20, borderRadius: 100,
+        background: on ? '#16A34A' : '#E7E8E9',
+        position: 'relative', transition: 'background .2s', flexShrink: 0,
+      }}>
+        <div style={{
+          width: 16, height: 16, borderRadius: '50%', background: '#fff',
+          position: 'absolute', top: 2, left: 2,
+          transform: on ? 'translateX(16px)' : 'none',
+          transition: 'transform .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+        }} />
+      </div>
+    </div>
+  );
+
+  // Field wrapper
+  const Field = ({ label, required, children, style }) => (
+    <div style={{ marginBottom: 14, ...style }}>
+      {label && <label style={{ fontSize: 11, fontWeight: 500, color: '#515E74', marginBottom: 6, display: 'flex', gap: 2, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+        {label}{required && <span style={{ color: '#E11D48' }}>*</span>}
+      </label>}
+      {children}
+    </div>
+  );
+
+  // Input style
+  const inputStyle = (focused) => ({
+    width: '100%', border: `0.5px solid ${focused ? '#16A34A' : '#D4D7DC'}`,
+    borderRadius: 10, padding: '10px 12px',
+    fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 13,
+    color: '#0C121B', background: '#fff', outline: 'none',
+    boxSizing: 'border-box',
+  });
+
+  function FocusInput({ id, type = 'text', placeholder, value, onChange, ...rest }) {
+    const [f, setF] = useState(false);
+    return <input id={id} type={type} placeholder={placeholder} value={value}
+      onChange={e => onChange(e.target.value)}
+      onFocus={() => setF(true)} onBlur={() => setF(false)}
+      style={inputStyle(f)} {...rest} />;
+  }
+
+  // Section label
+  const SecLabel = ({ children }) => (
+    <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#7C8598', marginBottom: 10, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{children}</div>
+  );
+
+  // Card wrapper for sections
+  const Card = ({ children, style }) => (
+    <div style={{ background: '#fff', border: '0.5px solid #E7E8E9', borderRadius: 14, padding: '14px', marginBottom: 12, ...style }}>{children}</div>
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
-        <div style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0C121B', letterSpacing: '-0.02em', marginBottom: 6 }}>Introduce your dog</h2>
-          <p style={{ fontSize: 13, color: '#7C8598', lineHeight: 1.5 }}>Every dog that stays with us gets to know our team first.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+
+      {/* Sub-step progress dots */}
+      <div style={{ padding: '60px 24px 14px', borderBottom: '0.5px solid #F2F3F4' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          {Array.from({ length: TOTAL }).map((_, i) => {
+            const n = i + 1;
+            const done = n < subStep;
+            const active = n === subStep;
+            return (
+              <React.Fragment key={n}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 600,
+                  background: done ? '#16A34A' : active ? '#DCFCE7' : '#fff',
+                  border: `0.5px solid ${done ? '#16A34A' : active ? '#16A34A' : '#D4D7DC'}`,
+                  color: done ? '#fff' : active ? '#065F46' : '#7C8598',
+                  transition: 'all .18s',
+                }}>{done ? '✓' : n}</div>
+                {i < TOTAL - 1 && (
+                  <div style={{ flex: 1, height: 0.5, background: n < subStep ? '#16A34A' : '#D4D7DC', transition: 'background .18s' }} />
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
-
-        {/* Dog photo placeholder */}
-        <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: '#F2F3F4', border: '2px dashed #D4D7DC',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 24px', cursor: 'pointer', gap: 4,
-        }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C8598" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
-          </svg>
-          <span style={{ fontSize: 10, color: '#7C8598', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Add photo</span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <K9Input label="Dog's name" placeholder="e.g. Rocky" value={data.dogName} onChange={v => onChange('dogName', v)} />
-          <K9Select label="Breed" value={data.breed} onChange={v => onChange('breed', v)} options={breeds} />
-          <K9Input label="Date of birth" placeholder="DD / MM / YYYY" value={data.dob} onChange={v => onChange('dob', v)} />
-
-          {/* Size picker */}
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#515E74', fontFamily: 'Plus Jakarta Sans, sans-serif', display: 'block', marginBottom: 8 }}>Size</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {sizes.map(s => (
-                <div key={s} onClick={() => onChange('size', s)} style={{
-                  padding: '12px 14px', borderRadius: 12,
-                  border: `1.5px solid ${data.size === s ? '#253650' : '#E7E8E9'}`,
-                  background: data.size === s ? 'rgba(37,54,80,.04)' : '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer',
-                  transition: 'all .15s',
-                }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: data.size === s ? '#253650' : '#515E74', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{s}</span>
-                  {data.size === s && (
-                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#253650', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <K9Input label="Special notes" placeholder="Allergies, behaviour, medical conditions..." value={data.notes} onChange={v => onChange('notes', v)} />
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#0C121B', letterSpacing: '-0.01em' }}>{subTitles[subStep]}</div>
+          <div style={{ fontSize: 12, color: '#7C8598', marginTop: 2 }}>{subSubs[subStep]}</div>
         </div>
       </div>
-      <div style={{ padding: '16px 24px 32px', borderTop: '0.5px solid #E7E8E9', display: 'flex', gap: 10 }}>
-        <K9Button label="Back" variant="secondary" onClick={onBack} style={{ flex: 0, minWidth: 80 }} />
-        <K9Button label="Continue" onClick={onNext} disabled={!valid} />
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 8px' }}>
+
+        {/* ── SUB-STEP 1: Identity ── */}
+        {subStep === 1 && (
+          <div>
+            {/* Photo upload */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+              <div onClick={() => document.getElementById('ob-photo-input').click()} style={{
+                width: 88, height: 88, borderRadius: '50%',
+                background: '#F2F3F4',
+                border: pet.photoDataUrl ? '2px solid #16A34A' : '2px dashed #D4D7DC',
+                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden', position: 'relative', transition: 'border-color .15s',
+              }}>
+                {pet.photoDataUrl
+                  ? <img src={pet.photoDataUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C8598" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <span style={{ fontSize: 9, color: '#7C8598', fontWeight: 600, textAlign: 'center', lineHeight: 1.3, marginTop: 4 }}>Upload<br/>photo</span>
+                    </>
+                }
+              </div>
+              <input type="file" id="ob-photo-input" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
+              {pet.photoDataUrl && (
+                <div onClick={() => document.getElementById('ob-photo-input').click()}
+                  style={{ marginTop: 6, fontSize: 10, color: '#16A34A', fontWeight: 600, cursor: 'pointer' }}>Change photo</div>
+              )}
+            </div>
+
+            <Field label="Pet name" required>
+              <FocusInput placeholder="e.g. Charlie, Luna…" value={pet.name} onChange={v => upd('name', v)} />
+            </Field>
+
+            <Field label="Species">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#DCFCE7', border: '1.5px solid #16A34A', borderRadius: 10, padding: '10px 14px' }}>
+                <span style={{ fontSize: 20 }}>🐶</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#065F46', flex: 1 }}>Dog</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+            </Field>
+
+            <Field label="Breed" required>
+              <FocusInput placeholder="e.g. Golden Retriever, Shiba Inu…" value={pet.breed} onChange={v => upd('breed', v)} />
+            </Field>
+
+            <Field label="Gender" required>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Chip label="♂ Male" selected={pet.gender === 'Male'} onClick={() => upd('gender', 'Male')} />
+                <Chip label="♀ Female" selected={pet.gender === 'Female'} onClick={() => upd('gender', 'Female')} />
+              </div>
+            </Field>
+
+            <Field label="Weight (kg)" required>
+              <div style={{ display: 'flex', alignItems: 'center', border: '0.5px solid #D4D7DC', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                <input type="number" placeholder="e.g. 8.5" step="0.1" min="0.5" max="100" value={pet.weight}
+                  onChange={e => upd('weight', e.target.value)}
+                  style={{ border: 'none', padding: '10px 12px', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 13, color: '#0C121B', outline: 'none', flex: 1, background: 'transparent' }} />
+                <div style={{ padding: '10px 14px', background: '#F2F3F4', borderLeft: '0.5px solid #D4D7DC', fontSize: 12, fontWeight: 600, color: '#515E74', flexShrink: 0 }}>kg</div>
+              </div>
+            </Field>
+
+            <Field label="Date of birth" required>
+              <FocusInput type="date" value={pet.dob} onChange={v => upd('dob', v)} placeholder="" />
+            </Field>
+
+            <Field label="Coat colour / description">
+              <FocusInput placeholder="e.g. Golden, black & white, brindle…" value={pet.coat} onChange={v => upd('coat', v)} />
+            </Field>
+          </div>
+        )}
+
+        {/* ── SUB-STEP 2: Health ── */}
+        {subStep === 2 && (
+          <div>
+            <Field label="Spayed / Neutered">
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['Yes', 'No', 'Not sure'].map(o => (
+                  <Chip key={o} label={o} selected={pet.fixed === o} onClick={() => upd('fixed', o)} />
+                ))}
+              </div>
+            </Field>
+            <Field label="Known allergies or sensitivities">
+              <FocusInput placeholder="e.g. Sensitive skin, chicken allergy… or leave blank" value={pet.allergies} onChange={v => upd('allergies', v)} />
+            </Field>
+            <Field label="Special dietary needs">
+              <FocusInput placeholder="e.g. Grain-free, raw diet, prescribed food…" value={pet.diet} onChange={v => upd('diet', v)} />
+            </Field>
+            <Field label="Any existing medical conditions">
+              <FocusInput placeholder="e.g. Hip dysplasia, epilepsy… or leave blank" value={pet.conditions} onChange={v => upd('conditions', v)} />
+            </Field>
+          </div>
+        )}
+
+        {/* ── SUB-STEP 3: Personality ── */}
+        {subStep === 3 && (
+          <div>
+            <Field>
+              <SecLabel>Energy level</SecLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {[['Low','🛋️ Couch potato'],['Medium','🚶 Medium energy'],['High','⚡ Always on the go'],['Very high','🔥 Needs loads of exercise']].map(([val, lbl]) => (
+                  <div key={val} onClick={() => upd('energy', val)} style={{
+                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                    border: `1.5px solid ${pet.energy === val ? '#16A34A' : '#E7E8E9'}`,
+                    background: pet.energy === val ? '#DCFCE7' : '#fff',
+                    color: pet.energy === val ? '#065F46' : '#515E74',
+                    fontSize: 13, fontWeight: pet.energy === val ? 600 : 400,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    transition: 'all .15s',
+                  }}>
+                    <span>{lbl}</span>
+                    {pet.energy === val && (
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="9" height="7" viewBox="0 0 10 8"><path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" fill="none"/></svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Field>
+
+            <Field style={{ marginTop: 6 }}>
+              <SecLabel>Around other dogs & people</SecLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {['🐕 Loves other dogs','😤 Selective with dogs','🚫 Prefers no dogs','👶 Great with kids','🐱 Good with cats','😰 Nervous around strangers','🤝 Friendly with everyone'].map(t => (
+                  <Tag key={t} label={t} selected={pet.socialTags.includes(t)} onClick={() => toggleTag('socialTags', t)} />
+                ))}
+              </div>
+            </Field>
+
+            <Field style={{ marginTop: 6 }}>
+              <SecLabel>Play & motivation</SecLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {['🎾 Loves fetch','🏊 Loves water','🦴 Toy obsessed','🍖 Food motivated','🐾 Loves cuddles','🎉 Very playful','📦 Independent'].map(t => (
+                  <Tag key={t} label={t} selected={pet.playTags.includes(t)} onClick={() => toggleTag('playTags', t)} />
+                ))}
+              </div>
+            </Field>
+
+            <Field style={{ marginTop: 6 }}>
+              <SecLabel>Behaviour notes</SecLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {['🦮 Leash trained','📢 Vocal / barky','😱 Separation anxiety','🌩️ Scared of thunder','🚗 Car anxiety','💤 Calm & relaxed','🏃 Escape artist'].map(t => (
+                  <Tag key={t} label={t} selected={pet.behavTags.includes(t)} onClick={() => toggleTag('behavTags', t)} />
+                ))}
+              </div>
+            </Field>
+
+            <Field label="Anything else the team should know?" style={{ marginTop: 6 }}>
+              <textarea placeholder="e.g. Gets anxious at loud noises…" value={pet.notes}
+                onChange={e => upd('notes', e.target.value)} rows={3}
+                style={{ ...inputStyle(false), resize: 'none' }} />
+            </Field>
+          </div>
+        )}
+
+        {/* ── SUB-STEP 4: Emergency & Vet ── */}
+        {subStep === 4 && (
+          <div>
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <SecLabel>Emergency contact</SecLabel>
+                <Toggle on={pet.ecUseOwner} onToggle={() => upd('ecUseOwner', !pet.ecUseOwner)} label="Use my info" />
+              </div>
+              {pet.ecUseOwner ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F2F3F4', borderRadius: 10, padding: '10px 12px' }}>
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0C121B' }}>Sarah Dewi</div>
+                    <div style={{ fontSize: 11, color: '#7C8598' }}>+62 812 9876 5432 · Owner</div>
+                  </div>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="9" height="7" viewBox="0 0 10 8"><path d="M1 4l3 3 5-6" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" fill="none"/></svg>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Field label="Full name" required><FocusInput placeholder="e.g. Pak Budi" value={pet.ecName} onChange={v => upd('ecName', v)} /></Field>
+                  <Field label="Relationship"><FocusInput placeholder="e.g. Spouse, parent…" value={pet.ecRel} onChange={v => upd('ecRel', v)} /></Field>
+                  <Field label="Phone number" required style={{ marginBottom: 0 }}><FocusInput type="tel" placeholder="e.g. 0812-3456-7890" value={pet.ecPhone} onChange={v => upd('ecPhone', v)} /></Field>
+                </>
+              )}
+            </Card>
+
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <SecLabel>Vet info</SecLabel>
+                  <span style={{ fontSize: 10, color: '#7C8598', marginBottom: 10 }}>(optional)</span>
+                </div>
+                <Toggle on={pet.vetUseOwner} onToggle={() => upd('vetUseOwner', !pet.vetUseOwner)} label="Use my info" />
+              </div>
+              {pet.vetUseOwner ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F2F3F4', borderRadius: 10, padding: '10px 12px' }}>
+                  <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0C121B' }}>Sarah Dewi</div>
+                    <div style={{ fontSize: 11, color: '#7C8598' }}>Owner contact</div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Field label="Clinic name"><FocusInput placeholder="e.g. Happy Paws Vet Clinic" value={pet.vetClinic} onChange={v => upd('vetClinic', v)} /></Field>
+                  <Field label="Vet's name"><FocusInput placeholder="e.g. Dr. Reza" value={pet.vetName} onChange={v => upd('vetName', v)} /></Field>
+                  <Field label="Phone number" style={{ marginBottom: 0 }}><FocusInput type="tel" placeholder="e.g. 0812-3456-7890" value={pet.vetPhone} onChange={v => upd('vetPhone', v)} /></Field>
+                </>
+              )}
+            </Card>
+
+            {/* Info box */}
+            <div style={{ background: '#ECEFFE', border: '0.5px solid #899BFA', borderRadius: 12, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6EF5" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <p style={{ fontSize: 11, color: '#5B6EF5', lineHeight: 1.5, margin: 0, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  We only contact your emergency person in urgent situations — never for routine updates.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SUB-STEP 5: Review ── */}
+        {subStep === 5 && (() => {
+          const allTags = [...pet.socialTags, ...pet.playTags, ...pet.behavTags];
+          const ecDisplay = pet.ecUseOwner ? 'Sarah Dewi · +62 812 9876 5432' : [pet.ecName, pet.ecPhone].filter(Boolean).join(' · ');
+          const vetDisplay = pet.vetUseOwner ? 'Owner contact' : [pet.vetClinic, pet.vetName].filter(Boolean).join(' · ');
+          return (
+            <div>
+              {/* Pet card */}
+              <Card style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+                  background: pet.photoDataUrl ? 'transparent' : '#DCFCE7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, fontWeight: 700, color: '#065F46', overflow: 'hidden',
+                }}>
+                  {pet.photoDataUrl
+                    ? <img src={pet.photoDataUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : (pet.name[0] || '?').toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#0C121B', marginBottom: 2 }}>{pet.name || '–'}</div>
+                  <div style={{ fontSize: 12, color: '#7C8598' }}>{'Dog · ' + [pet.breed, pet.gender].filter(Boolean).join(' · ')}</div>
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', background: '#FFF0E0', color: '#EA6C00', padding: '3px 8px', borderRadius: 100 }}>Pending</span>
+              </Card>
+
+              {[
+                { icon: '🎂', label: 'Date of birth', val: pet.dob ? new Date(pet.dob).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '–' },
+                { icon: '⚖️', label: 'Weight', val: pet.weight ? pet.weight + ' kg' : '–' },
+                { icon: '✂️', label: 'Spayed/Neutered', val: pet.fixed || '–' },
+                { icon: '⚠️', label: 'Allergies', val: pet.allergies || 'None noted' },
+                { icon: '📞', label: 'Emergency contact', val: ecDisplay || '–' },
+                { icon: '🏥', label: 'Vet info', val: vetDisplay || '–' },
+              ].map(({ icon, label, val }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid #F2F3F4' }}>
+                  <span style={{ fontSize: 16, flexShrink: 0, width: 24, textAlign: 'center' }}>{icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, color: '#7C8598', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 1 }}>{label}</div>
+                    <div style={{ fontSize: 13, color: '#0C121B', fontWeight: 500 }}>{val}</div>
+                  </div>
+                </div>
+              ))}
+
+              {allTags.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <SecLabel>Personality tags</SecLabel>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {allTags.slice(0, 6).map(t => (
+                      <span key={t} style={{ fontSize: 10, padding: '4px 10px', borderRadius: 100, background: '#DCFCE7', color: '#065F46' }}>{t}</span>
+                    ))}
+                    {allTags.length > 6 && <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 100, background: '#F2F3F4', color: '#7C8598' }}>+{allTags.length - 6} more</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+      </div>{/* end scroll */}
+
+      {/* Footer */}
+      <div style={{ padding: '12px 20px 28px', borderTop: '0.5px solid #E7E8E9' }}>
+        {/* Skip link — only on sub-step 1 */}
+        {subStep === 1 && (
+          <div style={{ textAlign: 'center', marginBottom: 10 }}>
+            <span onClick={onSkip} style={{
+              fontSize: 12, color: '#7C8598', cursor: 'pointer',
+              fontFamily: 'Plus Jakarta Sans, sans-serif',
+              borderBottom: '1px dashed #D4D7DC', paddingBottom: 1,
+            }}>Skip for now — I'll add my pet later</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <K9Button label="Back" variant="secondary" onClick={backSub} style={{ flex: 0, minWidth: 72 }} />
+          <K9Button
+            label={subStep === TOTAL ? 'Add pet to my pack 🐾' : `Next${subStep === 1 ? ' — Health info' : subStep === 2 ? ' — Personality' : subStep === 3 ? ' — Emergency & vet' : ' — Review'}`}
+            onClick={nextSub}
+            disabled={subStep === 1 ? !step1Valid : subStep === 4 ? !step4Valid : false}
+          />
+        </div>
       </div>
     </div>
   );
@@ -1670,40 +2063,50 @@ function StepDone({ data, onFinish }) {
       <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0C121B', letterSpacing: '-0.02em', marginBottom: 10 }}>
         You're all set, {data.firstName || 'there'}!
       </h1>
-      <p style={{ fontSize: 14, color: '#515E74', lineHeight: 1.6, marginBottom: 12 }}>
-        Welcome to K9 Klan. {data.dogName ? `We can't wait to meet ${data.dogName}.` : 'We can\'t wait to meet your dog.'}
-      </p>
-      <p style={{ fontSize: 13, color: '#7C8598', lineHeight: 1.5, marginBottom: 40 }}>
-        Our team will be in touch via WhatsApp to schedule{' '}
-        {data.dogName ? `${data.dogName}'s` : 'your dog\'s'} first assessment.
-      </p>
+      {(() => {
+        const pet = data.petData;
+        const petName = pet && pet.name;
+        return (
+          <>
+            <p style={{ fontSize: 14, color: '#515E74', lineHeight: 1.6, marginBottom: 12 }}>
+              Welcome to K9 Klan. {petName ? `We can't wait to meet ${petName}.` : "We can't wait to meet your dog."}
+            </p>
+            <p style={{ fontSize: 13, color: '#7C8598', lineHeight: 1.5, marginBottom: 40 }}>
+              Our team will be in touch via WhatsApp to schedule{' '}
+              {petName ? `${petName}'s` : "your dog's"} first assessment.
+            </p>
 
-      {/* Pet card preview */}
-      {data.dogName && (
-        <div style={{
-          width: '100%', background: '#fff', borderRadius: 16,
-          border: '0.5px solid #E7E8E9', padding: '14px 16px',
-          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32,
-          textAlign: 'left',
-        }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#F2F3F4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-              <ellipse cx="16" cy="22" rx="8" ry="5" fill="#253650" opacity=".15"/>
-              <circle cx="16" cy="13" r="5" fill="#253650" opacity=".25"/>
-              <circle cx="9" cy="10" r="2.5" fill="#253650" opacity=".2"/>
-              <circle cx="23" cy="10" r="2.5" fill="#253650" opacity=".2"/>
-            </svg>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#0C121B', marginBottom: 2 }}>{data.dogName}</div>
-            <div style={{ fontSize: 12, color: '#7C8598' }}>{data.breed || 'Unknown breed'}{data.size ? ` · ${data.size.split(' ')[0]}` : ''}</div>
-          </div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 100, background: '#FFF0E0' }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#EA6C00' }} />
-            <span style={{ fontSize: 9, fontWeight: 500, color: '#EA6C00', letterSpacing: '.08em', textTransform: 'uppercase', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Pending</span>
-          </span>
-        </div>
-      )}
+            {/* Pet card preview */}
+            {pet && pet.name && (
+              <div style={{
+                width: '100%', background: '#fff', borderRadius: 16,
+                border: '0.5px solid #E7E8E9', padding: '14px 16px',
+                display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32,
+                textAlign: 'left',
+              }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%', overflow: 'hidden',
+                  background: pet.photoDataUrl ? 'transparent' : '#DCFCE7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  fontSize: 18, fontWeight: 700, color: '#065F46',
+                }}>
+                  {pet.photoDataUrl
+                    ? <img src={pet.photoDataUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : pet.name[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0C121B', marginBottom: 2 }}>{pet.name}</div>
+                  <div style={{ fontSize: 12, color: '#7C8598' }}>{[pet.breed, pet.gender].filter(Boolean).join(' · ') || 'Dog'}</div>
+                </div>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 100, background: '#FFF0E0' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#EA6C00' }} />
+                  <span style={{ fontSize: 9, fontWeight: 500, color: '#EA6C00', letterSpacing: '.08em', textTransform: 'uppercase', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Pending</span>
+                </span>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <K9Button label="Go to dashboard" onClick={onFinish} />
     </div>
@@ -1719,7 +2122,7 @@ function OnboardingFlow({ onComplete }) {
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', phone: '', location: '',
-    dogName: '', breed: '', dob: '', size: '', notes: '',
+    petData: null,
     ecName: '', ecPhone: '', ecRelation: '',
   });
 
@@ -1737,8 +2140,10 @@ function OnboardingFlow({ onComplete }) {
   const onboardingSteps = [
     <StepYourInfo data={formData} onChange={update}
       onNext={() => goStep(1)} />,
-    <StepYourDog data={formData} onChange={update}
-      onNext={() => goStep(2)} onBack={() => goStep(0, -1)} />,
+    <StepAddPet
+      onNext={(petData) => { update('petData', petData); goStep(2); }}
+      onBack={() => goStep(0, -1)}
+      onSkip={() => goStep(2)} />,
     <StepEmergency data={formData} onChange={update}
       onNext={() => goStep(3)} onBack={() => goStep(1, -1)} />,
     <StepDone data={formData} onFinish={onComplete} />,
@@ -1747,31 +2152,47 @@ function OnboardingFlow({ onComplete }) {
   if (screen === 'splash') return <SplashScreen onNext={s => setScreen(s)} />;
   if (screen === 'signin') return <SignInScreen onNext={s => { setScreen(s); setStep(0); }} onBack={() => setScreen('splash')} />;
 
-  const stepTitles = ['Your info', 'Your dog', 'Emergency', 'Done'];
+  const stepTitles = ['Your info', 'Add pet', 'Emergency', 'Done'];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#fff', fontFamily: 'Plus Jakarta Sans, sans-serif', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ padding: '60px 24px 24px', borderBottom: '0.5px solid #E7E8E9' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          {step < 3 ? (
-            <>
-              <div onClick={() => step === 0 ? setScreen('signin') : goStep(step - 1, -1)} style={{ cursor: 'pointer', padding: '4px', margin: '-4px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C121B" strokeWidth="2" strokeLinecap="round">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#515E74' }}>
-                Step {step + 1} of 3
-              </div>
-              <div style={{ width: 22 }} />
-            </>
-          ) : (
-            <div style={{ width: '100%' }} />
-          )}
+      {/* Header — only shown on step 0 (Your info); StepAddPet manages its own sub-header */}
+      {step === 0 && (
+        <div style={{ padding: '60px 24px 24px', borderBottom: '0.5px solid #E7E8E9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div onClick={() => setScreen('signin')} style={{ cursor: 'pointer', padding: '4px', margin: '-4px' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C121B" strokeWidth="2" strokeLinecap="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#515E74' }}>Step 1 of 3</div>
+            <div style={{ width: 22 }} />
+          </div>
+          <StepDots total={3} current={0} />
         </div>
-        {step < 3 && <StepDots total={3} current={step} />}
-      </div>
+      )}
+
+      {/* On steps 2 (Emergency) and 3 (Done) show the outer header */}
+      {(step === 2 || step === 3) && (
+        <div style={{ padding: '60px 24px 24px', borderBottom: '0.5px solid #E7E8E9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            {step === 2 ? (
+              <>
+                <div onClick={() => goStep(1, -1)} style={{ cursor: 'pointer', padding: '4px', margin: '-4px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0C121B" strokeWidth="2" strokeLinecap="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#515E74' }}>Step 3 of 3</div>
+                <div style={{ width: 22 }} />
+              </>
+            ) : (
+              <div style={{ width: '100%' }} />
+            )}
+          </div>
+          {step === 2 && <StepDots total={3} current={2} />}
+        </div>
+      )}
 
       {/* Step content with slide animation */}
       <div style={{
@@ -1801,6 +2222,86 @@ function HomeScreen({ onNav }) {
   const BG = '#F5F6FA';
   const shadow = '0 2px 16px rgba(12,18,27,.10), 0 0 0 0.5px rgba(12,18,27,.05)';
   const shadowHeavy = '0 4px 20px rgba(37,54,80,.18)';
+  const [showNotif, setShowNotif] = React.useState(false);
+  const [readIds, setReadIds] = React.useState([]);
+
+  const notifications = [
+    {
+      id: 'n1', unread: true, type: 'active',
+      icon: '🐾', iconBg: '#DCFCE7', iconColor: '#065F46',
+      title: 'Rocky is checked in!',
+      body: 'Rocky arrived at 8:02 AM and has settled in. Session ends at 5:00 PM.',
+      time: 'Just now',
+      pet: 'Rocky', petImg: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=60&q=80',
+      action: null,
+    },
+    {
+      id: 'n2', unread: true, type: 'report',
+      icon: '📋', iconBg: '#ECEFFE', iconColor: '#4338CA',
+      title: "Mochi's report is ready",
+      body: "Yesterday's daycare report has been posted. Mochi was a star — check it out!",
+      time: '2h ago',
+      pet: 'Mochi', petImg: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=60&q=80',
+      action: 'View report',
+    },
+    {
+      id: 'n3', unread: true, type: 'reminder',
+      icon: '📅', iconBg: '#FFF0E0', iconColor: '#EA6C00',
+      title: "Mochi's Friday slot is open",
+      body: "You usually book Fridays. This week's full day slot at 11:00 AM is still available.",
+      time: '5h ago',
+      pet: 'Mochi', petImg: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=60&q=80',
+      action: 'Book now',
+    },
+    {
+      id: 'n4', unread: false, type: 'booking',
+      icon: '✅', iconBg: '#DCFCE7', iconColor: '#065F46',
+      title: 'Booking confirmed',
+      body: 'Rocky — Boarding · Private Suite, Sat 29 Apr. Reference: BK-250429-0112.',
+      time: 'Yesterday',
+      pet: 'Rocky', petImg: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=60&q=80',
+      action: 'View booking',
+    },
+    {
+      id: 'n5', unread: false, type: 'promo',
+      icon: '🎁', iconBg: '#FEF3C7', iconColor: '#92400E',
+      title: 'Refer a friend & get a free day',
+      body: 'Share your code with a friend. When they book their first session, you both get one full day pass free.',
+      time: '2 days ago',
+      pet: null, petImg: null,
+      action: 'Share code',
+    },
+    {
+      id: 'n6', unread: false, type: 'health',
+      icon: '💉', iconBg: '#FFE4E6', iconColor: '#9F1239',
+      title: "Bubbles' vaccination due soon",
+      body: "Bubbles is due for her annual booster in 2 weeks. Make sure she's up to date before her next session.",
+      time: '3 days ago',
+      pet: 'Bubbles', petImg: 'https://images.unsplash.com/photo-1591160690555-5debfba289f0?auto=format&fit=crop&w=60&q=80',
+      action: null,
+    },
+    {
+      id: 'n7', unread: false, type: 'report',
+      icon: '📋', iconBg: '#ECEFFE', iconColor: '#4338CA',
+      title: "Rocky's weekend report",
+      body: 'Rocky had a great boarding stay. Full report with photos and activity log is available.',
+      time: '4 days ago',
+      pet: 'Rocky', petImg: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=60&q=80',
+      action: 'View report',
+    },
+  ];
+
+  const unreadCount = notifications.filter(n => n.unread && !readIds.includes(n.id)).length;
+
+  const markAllRead = () => setReadIds(notifications.map(n => n.id));
+  const markRead = (id) => setReadIds(r => r.includes(id) ? r : [...r, id]);
+
+  // Group by date
+  const groups = [
+    { label: 'Today', ids: ['n1', 'n2', 'n3'] },
+    { label: 'Yesterday', ids: ['n4'] },
+    { label: 'Earlier', ids: ['n5', 'n6', 'n7'] },
+  ];
 
   const pets = [
     { key: 'rocky',   name: 'Rocky',   breed: 'Golden Retriever',  age: '3 yrs', next: 'Today · Daycare',    nextBold: true,  img: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=300&q=80', assessed: true },
@@ -1874,11 +2375,11 @@ function HomeScreen({ onNav }) {
               <div style={{ fontSize: 20, fontWeight: 800, color: C.textPrimary, letterSpacing: '-0.02em', lineHeight: 1.1 }}>Sarah Dewi</div>
             </div>
           </div>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', border: `0.5px solid ${C.border}`, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer', boxShadow: shadow }}>
+          <div onClick={() => setShowNotif(true)} style={{ width: 40, height: 40, borderRadius: '50%', border: `0.5px solid ${C.border}`, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: 'pointer', boxShadow: shadow }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
             </svg>
-            <div style={{ position: 'absolute', top: 8, right: 8, width: 7, height: 7, background: '#E11D48', borderRadius: '50%', border: '2px solid #fff' }} />
+            {unreadCount > 0 && <div style={{ position: 'absolute', top: 8, right: 8, width: 7, height: 7, background: '#E11D48', borderRadius: '50%', border: '2px solid #fff' }} />}
           </div>
         </div>
       </div>
@@ -2148,7 +2649,7 @@ function HomeScreen({ onNav }) {
       <div style={{ height: 24 }} />
 
       {/* ── Smart Reminders ── */}
-      <Sec title="Smart reminders" link="settings" onLink={() => {}} />
+      <Sec title="Smart reminders" />
       {[
         { iconBg: '#FFF0E0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EA6C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, title: "Time for Mochi's daycare?", sub: "You usually book Fridays. This week's slot is open." },
         { iconBg: '#DCFCE7', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, title: 'Weekend boarding coming up?', sub: 'Rocky usually boards the last weekend of the month.' },
@@ -2185,16 +2686,117 @@ function HomeScreen({ onNav }) {
 
       <div style={{ height: 24 }} />
 
-      {/* ── Promo Strip ── */}
-      <div style={{ margin: '0 20px', background: C.navy, borderRadius: 16, padding: '16px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: shadowHeavy }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 4, letterSpacing: '-0.01em' }}>Refer a friend, get a free daycare</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', lineHeight: 1.4 }}>Share your code and both get one full day pass free.</div>
-        </div>
-        <button style={{ fontSize: 11, fontWeight: 700, background: C.amber, color: C.midnight, border: 'none', borderRadius: 100, padding: '7px 16px', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: F }}>Share</button>
-      </div>
 
-      <div style={{ height: 24 }} />
+      {/* ── Notifications Overlay ── */}
+      {showNotif && (
+        <div style={{
+          position: 'absolute', inset: 0, background: '#F2F3F4',
+          zIndex: 110, borderRadius: 28, overflowY: 'auto',
+          animation: 'pageEnter .25s cubic-bezier(.25,.46,.45,.94) both',
+        }}>
+          {/* Header */}
+          <div style={{ position: 'sticky', top: 0, background: '#F2F3F4', zIndex: 2, padding: '54px 20px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              <div onClick={() => setShowNotif(false)} style={{
+                width: 36, height: 36, borderRadius: 10, background: '#fff',
+                border: '0.5px solid #D4D7DC', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+                boxShadow: '0 1px 4px rgba(12,18,27,.08)',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0C121B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 21, fontWeight: 800, color: '#0C121B', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                  Notifications
+                  {unreadCount > 0 && (
+                    <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 700, background: '#E11D48', color: '#fff', borderRadius: 100, padding: '1px 7px', verticalAlign: 'middle' }}>{unreadCount}</span>
+                  )}
+                </div>
+              </div>
+              {unreadCount > 0 && (
+                <div onClick={markAllRead} style={{ fontSize: 11, fontWeight: 600, color: '#253650', cursor: 'pointer', flexShrink: 0, padding: '4px 0' }}>
+                  Mark all read
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notification list */}
+          <div style={{ padding: '4px 0 80px' }}>
+            {groups.map(group => {
+              const groupNotifs = notifications.filter(n => group.ids.includes(n.id));
+              if (!groupNotifs.length) return null;
+              return (
+                <div key={group.label}>
+                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#7C8598', padding: '12px 20px 6px', fontFamily: F }}>
+                    {group.label}
+                  </div>
+                  {groupNotifs.map(n => {
+                    const isUnread = n.unread && !readIds.includes(n.id);
+                    return (
+                      <div key={n.id} onClick={() => markRead(n.id)} style={{
+                        margin: '0 16px 8px',
+                        background: isUnread ? '#fff' : 'rgba(255,255,255,0.6)',
+                        border: `0.5px solid ${isUnread ? '#D4D7DC' : '#E7E8E9'}`,
+                        borderRadius: 16, padding: '12px 14px',
+                        cursor: 'pointer', position: 'relative',
+                        boxShadow: isUnread ? '0 2px 10px rgba(12,18,27,.08)' : 'none',
+                        transition: 'all .15s',
+                      }}>
+
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          {/* Icon or pet avatar */}
+                          <div style={{ flexShrink: 0, position: 'relative' }}>
+                            <div style={{
+                              width: 40, height: 40, borderRadius: 12,
+                              background: n.iconBg, display: 'flex', alignItems: 'center',
+                              justifyContent: 'center', fontSize: 18,
+                            }}>{n.icon}</div>
+                            {n.petImg && (
+                              <img src={n.petImg} style={{
+                                position: 'absolute', bottom: -4, right: -4,
+                                width: 20, height: 20, borderRadius: '50%',
+                                objectFit: 'cover', border: '2px solid #fff',
+                              }} />
+                            )}
+                          </div>
+                          {/* Body */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: isUnread ? 700 : 500, color: '#0C121B', marginBottom: 3, lineHeight: 1.3 }}>{n.title}</div>
+                            <div style={{ fontSize: 11, color: '#515E74', lineHeight: 1.5, marginBottom: n.action ? 10 : 0 }}>{n.body}</div>
+                            {n.action && (
+                              <div onClick={e => { e.stopPropagation(); markRead(n.id); if (n.type === 'booking' || n.type === 'reminder') onNav('booking'); else if (n.type === 'report') onNav('activities'); }} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                fontSize: 11, fontWeight: 700, color: '#253650',
+                                background: '#EDF0F7', borderRadius: 100, padding: '5px 12px',
+                                cursor: 'pointer',
+                              }}>
+                                {n.action}
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#253650" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          {/* Time */}
+                          <div style={{ fontSize: 10, color: '#7C8598', flexShrink: 0, marginTop: 2, fontFamily: F }}>{n.time}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+
+            {/* Empty state (all read) */}
+            {unreadCount === 0 && (
+              <div style={{ textAlign: 'center', padding: '32px 40px 0', color: '#7C8598' }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>🔔</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0C121B', marginBottom: 4 }}>You're all caught up</div>
+                <div style={{ fontSize: 12, lineHeight: 1.5 }}>No new notifications right now. We'll let you know when something needs your attention.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2211,7 +2813,7 @@ Object.assign(window, { HomeScreen });
 // Steps: 1=Service → 2=Pet → 3=Bundle(if needed) → 4=Date → 5=Feeding → 6=Consent → 7=Confirm
 const { useState: useBkState } = React;
 
-function BookingScreen({ onNav }) {
+function BookingScreen({ onNav, onFlowChange }) {
   const F = 'Plus Jakarta Sans, sans-serif';
   const C = K9_COLORS;
   const BG = '#F5F6FA';
@@ -2317,7 +2919,77 @@ function BookingScreen({ onNav }) {
     setTrainWeekend(null); setTrainNotes(''); setTrainPhone(''); setTrainUseOwner(true);
   };
 
-  const TOTAL_STEPS = 6;
+  const { useEffect: useBkEffect } = React;
+
+  // Tell App whether we're in-flow (step > 1 with service chosen) so it hides the nav bar
+  useBkEffect(() => {
+    const inFlow = service !== null && step !== 1 && !confirmed;
+    if (onFlowChange) onFlowChange(inFlow);
+  }, [service, step, confirmed]);
+
+  // Per-step floating nav config: { back, next, nextLabel, nextDisabled }
+  const floatNav = (() => {
+    if (confirmed || step === 1 || !service) return null;
+    if (service === 'Training' && step === 'training') return null; // training has its own inline flow
+    const back = {
+      2: () => setStep(1),
+      3: () => bundleStep === 0 ? setStep(2) : setBundleStep(i => i - 1),
+      4: () => {
+        if (service === 'Boarding') setStep(2);
+        else if (petsNeedingBundle.length > 0) setStep(3);
+        else setStep(2);
+      },
+      5: () => setStep(4),
+      6: () => setStep(5),
+      7: () => setStep(6),
+    };
+    const next = {
+      2: () => {
+        const needBundle = service === 'Daycare' && selectedPetObjs.some(p => !p.bundle);
+        if (service === 'Training') { setStep('training'); return; }
+        setStep(needBundle ? 3 : 4);
+        if (!needBundle) setDateStep(0);
+      },
+      3: () => {
+        const isLast = bundleStep >= petsNeedingBundle.length - 1;
+        if (isLast) { setStep(4); setDateStep(0); }
+        else setBundleStep(i => i + 1);
+      },
+      4: () => {
+        if (sameDay || dateStep >= selectedPetObjs.length - 1) setStep(5);
+        else setDateStep(i => i + 1);
+      },
+      5: () => setStep(6),
+      6: () => setStep(7),
+      7: () => setConfirmed(true),
+    };
+    const nextLabel = {
+      2: 'Next',
+      3: bundleStep >= petsNeedingBundle.length - 1 ? 'Next — Date' : 'Next dog',
+      4: (sameDay || dateStep >= selectedPetObjs.length - 1) ? 'Next — Feeding' : 'Next dog',
+      5: 'Next — Consent',
+      6: 'Next — Review',
+      7: `Confirm booking 🐾`,
+    };
+    const canNext = {
+      2: selectedPets.length > 0,
+      3: !!petBundles[currentBundlePet?.id],
+      4: (() => {
+        if (service === 'Boarding') return !!(checkIn && checkOut && nights > 0);
+        if (sameDay) return !!checkIn;
+        const cur = currentDatePet;
+        if (!cur) return false;
+        const d = petDates[cur.id];
+        return !!(d && d.checkIn);
+      })(),
+      5: !!feedingChoice,
+      6: consentChecked,
+      7: true,
+    };
+    const s = typeof step === 'number' ? step : null;
+    if (!s || !back[s]) return null;
+    return { back: back[s], next: next[s], nextLabel: nextLabel[s], nextDisabled: !canNext[s] };
+  })();
 
   // ── Step tracker ─────────────────────────────────────────
   const StepTrack = () => {
@@ -2588,23 +3260,6 @@ function BookingScreen({ onNav }) {
           );
         })()}
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => setStep(1)} />
-          <K9Button
-            label={
-              service === 'Daycare' && selectedPetObjs.some(p => !p.bundle)
-                ? `Next — Buy bundles (${selectedPetObjs.filter(p => !p.bundle).length} dog${selectedPetObjs.filter(p=>!p.bundle).length>1?'s':''} required)`
-                : 'Next — Pick date'
-            }
-            onClick={() => {
-              if (!selectedPets.length) return;
-              const needBundle = service === 'Daycare' && selectedPetObjs.some(p => !p.bundle);
-              setBundleStep(0);
-              setStep(needBundle ? 3 : 4);
-            }}
-            disabled={!selectedPets.length}
-          />
-        </div>
       </div>
     );
   };
@@ -2686,18 +3341,6 @@ function BookingScreen({ onNav }) {
           <div style={{ background: '#FFF0E0', borderRadius: 12, padding: '10px 14px', fontSize: 11, color: '#EA6C00', fontFamily: F, lineHeight: 1.5 }}>
             ⚠️ A bundle is required to book daycare. Choose any — including Single session.
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => bundleStep === 0 ? setStep(2) : setBundleStep(i => i - 1)} />
-          <K9Button
-            label={isLast ? 'Next — Pick dates' : `Next — Bundle for ${petsNeedingBundle[bundleStep + 1]?.name}`}
-            onClick={() => {
-              if (isLast) { setStep(4); setDateStep(0); }
-              else setBundleStep(i => i + 1);
-            }}
-            disabled={!chosen}
-          />
         </div>
       </div>
     );
@@ -2868,17 +3511,6 @@ function BookingScreen({ onNav }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => {
-            if (!sameDay && dateStep > 0) setDateStep(i => i - 1);
-            else setStep(service === 'Boarding' ? 2 : (petsNeedingBundle.length > 0 ? 3 : 2));
-          }} />
-          <K9Button
-            label={sameDay || isLast ? 'Next — Feeding info' : `Next — Date for ${selectedPetObjs[dateStep + 1]?.name}`}
-            onClick={handleNext}
-            disabled={!canContinue}
-          />
-        </div>
       </div>
     );
   };
@@ -2958,10 +3590,6 @@ function BookingScreen({ onNav }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => setStep(4)} />
-          <K9Button label="Next — Consent form" onClick={() => setStep(6)} disabled={!feedingChoice} />
-        </div>
       </div>
     );
   };
@@ -3250,10 +3878,6 @@ function BookingScreen({ onNav }) {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: consentChecked ? C.navy : C.textPrimary, fontFamily: F, lineHeight: 1.5 }}>I confirm that all information I have entered in this form is true and accurate, and I agree to all the terms above.</span>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => setStep(5)} />
-          <K9Button label="Review & confirm booking" onClick={() => setStep(7)} disabled={!canProceed} />
-        </div>
       </div>
     );
   };
@@ -3331,10 +3955,6 @@ function BookingScreen({ onNav }) {
         )}
 
         <textarea placeholder="Any special notes? (optional)" rows="3" style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: F, fontSize: 12, color: C.textPrimary, resize: 'none', outline: 'none', background: '#fff', marginBottom: 14, boxSizing: 'border-box' }} />
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn onBack={() => setStep(6)} />
-          <K9Button label={`Confirm booking for ${selectedPetObjs.length} dog${selectedPetObjs.length > 1 ? 's' : ''} 🐾`} onClick={() => setConfirmed(true)} />
-        </div>
       </div>
     );
   };
@@ -3647,20 +4267,67 @@ function BookingScreen({ onNav }) {
   const isTraining = service === 'Training' && step === 'training';
 
   return (
-    <div style={{ background: BG, minHeight: '100%', paddingBottom: 110, fontFamily: F }}>
-      <div style={{ padding: '62px 20px 20px', background: isTraining ? '#1A1A2E' : service === 'Daycare' ? '#FEF3C7' : service === 'Boarding' ? C.purpleLight : '#fff', boxShadow: '0 1px 0 #E7E8E9', marginBottom: 0 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: isTraining ? '#fff' : service === 'Daycare' ? '#92400E' : service === 'Boarding' ? C.purple : C.textPrimary, letterSpacing: '-0.02em', marginBottom: 4 }}>
-          {isTraining ? '🎓 Training Request' : service === 'Daycare' ? 'Book a daycare' : service === 'Boarding' ? 'Book boarding' : 'Book a session'}
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG, fontFamily: F }}>
+      {/* Scrollable content area */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ padding: '62px 20px 20px', background: isTraining ? '#1A1A2E' : service === 'Daycare' ? '#FEF3C7' : service === 'Boarding' ? C.purpleLight : '#fff', boxShadow: '0 1px 0 #E7E8E9', marginBottom: 0 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: isTraining ? '#fff' : service === 'Daycare' ? '#92400E' : service === 'Boarding' ? C.purple : C.textPrimary, letterSpacing: '-0.02em', marginBottom: 4 }}>
+            {isTraining ? '🎓 Training Request' : service === 'Daycare' ? 'Book a daycare' : service === 'Boarding' ? 'Book boarding' : 'Book a session'}
+          </div>
+          <div style={{ fontSize: 12, color: isTraining ? 'rgba(255,255,255,.5)' : C.textTertiary }}>
+            {isTraining ? 'No fixed schedule — our CS team will reach out on WhatsApp.' : 'All bookings are per dog — no sharing between pets.'}
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: isTraining ? 'rgba(255,255,255,.5)' : C.textTertiary }}>
-          {isTraining ? 'No fixed schedule — our CS team will reach out on WhatsApp.' : 'All bookings are per dog — no sharing between pets.'}
+        <div style={{ height: 16 }} />
+        {!confirmed && !isTraining && <StepTrack />}
+        {isTraining && trainStep !== 'done' && <TrainStepTrack />}
+        <div style={{ height: 16 }} />
+        <div style={{ paddingBottom: floatNav ? 16 : 110 }}>
+          {confirmed ? <Success /> : isTraining ? <TrainFlow /> : (stepMap[step] || <Step1 />)}
         </div>
       </div>
-      <div style={{ height: 16 }} />
-      {!confirmed && !isTraining && <StepTrack />}
-      {isTraining && trainStep !== 'done' && <TrainStepTrack />}
-      <div style={{ height: 16 }} />
-      {confirmed ? <Success /> : isTraining ? <TrainFlow /> : (stepMap[step] || <Step1 />)}
+
+      {/* Fixed-to-bottom Back / Next pill — outside scroll so it never moves */}
+      {floatNav && (
+        <div style={{
+          flexShrink: 0,
+          padding: '12px 20px 28px',
+          background: 'rgba(245,246,250,0.96)',
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          borderTop: '0.5px solid #E7E8E9',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: '#fff',
+            borderRadius: 100, padding: '8px 8px 8px 16px',
+            boxShadow: '0 4px 20px rgba(12,18,27,.14), 0 0 0 0.5px rgba(12,18,27,.07)',
+            border: '0.5px solid #E7E8E9',
+          }}>
+            {/* Back button */}
+            <div onClick={floatNav.back} style={{
+              width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+              background: '#F2F3F4', border: '0.5px solid #D4D7DC',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0C121B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            {/* Next button */}
+            <div onClick={floatNav.nextDisabled ? undefined : floatNav.next} style={{
+              flex: 1, height: 38, borderRadius: 100,
+              background: floatNav.nextDisabled ? '#D4D7DC' : C.navy,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: floatNav.nextDisabled ? 'not-allowed' : 'pointer',
+              transition: 'background .15s',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: F, letterSpacing: '-0.01em' }}>{floatNav.nextLabel}</span>
+              {!floatNav.nextDisabled && (
+                <svg style={{ marginLeft: 6 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4963,7 +5630,7 @@ Object.assign(window, { ActivitiesScreen });
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script type="text/babel">
 // K9 Klan — Profile Screen
-function ProfileScreen({ onNav }) {
+function ProfileScreen({ onNav, onSignOut }) {
   const C = K9_COLORS;
   const F = 'Plus Jakarta Sans, sans-serif';
   const [page, setPage] = React.useState(null); // null | 'edit' | 'help' | 'about'
@@ -5193,7 +5860,7 @@ function ProfileScreen({ onNav }) {
 
         {/* Sign out */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#E11D48', cursor: 'pointer', padding: '12px 0' }}>Sign Out</div>
+          <div onClick={onSignOut} style={{ fontSize: 13, fontWeight: 600, color: '#E11D48', cursor: 'pointer', padding: '12px 0' }}>Sign Out</div>
         </div>
       </div>
     </div>
@@ -5226,9 +5893,12 @@ function App() {
   useAppEffect(() => { localStorage.setItem('k9_mainpage', mainPage); }, [mainPage]);
   useAppEffect(() => { _setAppFlow = (f) => { setFlow(f); setPageKey(k => k + 1); }; });
 
+  const [inBookingFlow, setInBookingFlow] = useAppState(false);
+
   const handleNav = useAppCallback((page) => {
     setMainPage(page);
     setPageKey(k => k + 1);
+    setInBookingFlow(false);
   }, []);
 
   if (flow === 'onboarding') {
@@ -5241,19 +5911,19 @@ function App() {
 
   const screens = {
     home:       <HomeScreen onNav={handleNav} />,
-    booking:    <BookingScreen onNav={handleNav} />,
+    booking:    <BookingScreen onNav={handleNav} onFlowChange={setInBookingFlow} />,
     activities: <ActivitiesScreen onNav={handleNav} />,
-    profile:    <ProfileScreen onNav={handleNav} />,
+    profile:    <ProfileScreen onNav={handleNav} onSignOut={() => { localStorage.removeItem('k9_flow'); localStorage.removeItem('k9_mainpage'); setFlow('onboarding'); setPageKey(k => k + 1); }} />,
   };
 
   return (
     <div style={{ height: '100%', position: 'relative', background: '#F5F6FA' }}>
-      <div className="app-scroll">
-        <div key={pageKey} className="page-enter">
+      <div className="app-scroll" style={inBookingFlow ? { overflowY: 'hidden' } : {}}>
+        <div key={pageKey} className="page-enter" style={inBookingFlow ? { height: '100%' } : {}}>
           {screens[mainPage] || screens.home}
         </div>
       </div>
-      <K9Nav active={mainPage} onNav={handleNav} />
+      {!inBookingFlow && <K9Nav active={mainPage} onNav={handleNav} />}
     </div>
   );
 }
