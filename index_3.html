@@ -2850,7 +2850,6 @@ function HomeScreen({ onNav }) {
       {[
         { iconBg: '#FFF0E0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EA6C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, title: "Time for Mochi's daycare?", sub: "You usually book Fridays. This week's slot is open." },
         { iconBg: '#DCFCE7', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, title: 'Weekend boarding coming up?', sub: 'Rocky usually boards the last weekend of the month.' },
-        { iconBg: '#FFF0E0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EA6C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12.5"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>, title: "Rocky's Bordetella vaccine is due soon", sub: 'Expires Apr 2026 — renew before his next boarding so he stays eligible.', nav: 'activities', cta: 'Update record', cta2: 'Remind later', primaryBg: C.warn },
       ].map((r, i) => (
         <div key={i} style={{ margin: '0 20px 8px', background: '#fff', borderRadius: 16, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 10, boxShadow: shadow }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: r.iconBg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{r.icon}</div>
@@ -2858,8 +2857,8 @@ function HomeScreen({ onNav }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary, marginBottom: 2 }}>{r.title}</div>
             <div style={{ fontSize: 11, color: C.textSecondary, lineHeight: 1.4 }}>{r.sub}</div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              <button onClick={() => onNav(r.nav || 'booking')} style={{ fontSize: 11, fontWeight: 700, padding: '5px 14px', borderRadius: 100, border: 'none', background: r.primaryBg || C.navy, color: '#fff', cursor: 'pointer', fontFamily: F }}>{r.cta || 'Book now'}</button>
-              <button style={{ fontSize: 11, padding: '5px 12px', borderRadius: 100, border: `0.5px solid ${C.borderMid}`, background: 'transparent', color: C.textSecondary, cursor: 'pointer', fontFamily: F }}>{r.cta2 || 'Skip'}</button>
+              <button onClick={() => onNav('booking')} style={{ fontSize: 11, fontWeight: 700, padding: '5px 14px', borderRadius: 100, border: 'none', background: C.navy, color: '#fff', cursor: 'pointer', fontFamily: F }}>Book now</button>
+              <button style={{ fontSize: 11, padding: '5px 12px', borderRadius: 100, border: `0.5px solid ${C.borderMid}`, background: 'transparent', color: C.textSecondary, cursor: 'pointer', fontFamily: F }}>Skip</button>
             </div>
           </div>
         </div>
@@ -4775,15 +4774,6 @@ function ActivitiesScreen({ onNav }) {
         { name: 'Zeus', img: petImgs.zeus },
       ],
     },
-    {
-      id: 'bk6', service: 'Boarding', active: false, upcoming: false,
-      badge: 'Completed', badgeBg: C.bgBase1, badgeColor: C.textTertiary,
-      dateLine: 'Sat 5 Apr → Mon 7 Apr · 2 nights',
-      pets: [
-        { name: 'Rocky', img: petImgs.rocky, date: '5 Apr', checkOut: '7 Apr' },
-        { name: 'Zeus',  img: petImgs.zeus,  date: '5 Apr', checkOut: '7 Apr' },
-      ],
-    },
   ];
 
   // ── Booking Detail — full page ────────────────────────────
@@ -5169,7 +5159,7 @@ function ActivitiesScreen({ onNav }) {
     const petWeights = { Rocky: '28 kg', Mochi: '8.2 kg', Bubbles: '4.8 kg', Zeus: '32 kg', Coco: '3.5 kg' };
     const petDayRate = { Rocky: 180000, Mochi: 120000, Bubbles: 120000, Zeus: 200000, Coco: 120000 };
     const petBoardRate = { Rocky: 270000, Mochi: 180000, Bubbles: 180000, Zeus: 320000, Coco: 180000 };
-    const nights = (bk.id === 'bk2' || bk.id === 'bk6') ? 2 : 1;
+    const nights = bk.id === 'bk2' ? 2 : 1;
     const subtotal = bk.pets.reduce((s, p) => s + (isBoarding ? petBoardRate[p.name] * nights : petDayRate[p.name]), 0);
     const foodEst = bk.pets.length * 35000;
 
@@ -5195,7 +5185,6 @@ function ActivitiesScreen({ onNav }) {
           { icon: '🍽️', name: 'Dinner',       status: 'Calm but had some food left in the bowl',                                         dot: '#4ADE80' },
           { icon: '🎾', name: 'Free Time',    status: 'Very playful and engaged with other dogs throughout the day',                     dot: '#16A34A' },
           { icon: '🛏️', name: 'Nap Time',     status: 'Had to be directed onto cot / crate but relaxed once on it',                     dot: '#FFB703' },
-          { icon: '🚽', name: 'Potty breaks',  status: 'Taken out on schedule — no accidents overnight',   dot: '#16A34A' },
           { icon: '✂️', name: 'Grooming',     status: 'Clean paws and face',                                                             dot: '#4ADE80' },
         ],
         friends: [
@@ -5215,7 +5204,6 @@ function ActivitiesScreen({ onNav }) {
           { icon: '🍽️', name: 'Dinner',       status: 'Calm and finished all the food',                                                   dot: '#16A34A' },
           { icon: '🎾', name: 'Free Time',    status: 'Mostly explored on its own but welcomed interactions from other dogs',            dot: '#4ADE80' },
           { icon: '🛏️', name: 'Nap Time',     status: 'Able to go on cot / crate and relax throughout',                                  dot: '#16A34A' },
-          { icon: '🚽', name: 'Potty breaks',  status: 'Regular breaks, all done outside',   dot: '#16A34A' },
           { icon: '✂️', name: 'Grooming',     status: 'Brushed thoroughly',                                                               dot: '#16A34A' },
         ],
         friends: [
@@ -5233,7 +5221,6 @@ function ActivitiesScreen({ onNav }) {
           { icon: '🍽️', name: 'Dinner',       status: 'Took a long time to settle and had some food left in the bowl',                   dot: '#F97316' },
           { icon: '🎾', name: 'Free Time',    status: 'Still unsure and observed other dogs from a distance',                            dot: '#F97316' },
           { icon: '🛏️', name: 'Nap Time',     status: 'Had a hard time being directed onto cot and needed a leash to help settle down', dot: '#E11D48' },
-          { icon: '🚽', name: 'Potty breaks',  status: 'One small accident overnight, otherwise on track',   dot: '#FFB703' },
           { icon: '✂️', name: 'Grooming',     status: 'Applied ointments / special treatments (as requested)',                           dot: '#FFB703' },
         ],
         friends: [],
@@ -5249,7 +5236,6 @@ function ActivitiesScreen({ onNav }) {
           { icon: '🍽️', name: 'Dinner',       status: 'Calm and finished all the food',                                                   dot: '#16A34A' },
           { icon: '🎾', name: 'Free Time',    status: 'Very playful and engaged with other dogs throughout the day',                     dot: '#16A34A' },
           { icon: '🛏️', name: 'Nap Time',     status: 'Able to go on cot / crate and relax throughout',                                  dot: '#16A34A' },
-          { icon: '🚽', name: 'Potty breaks',  status: 'Taken out on schedule — no accidents overnight',   dot: '#16A34A' },
           { icon: '✂️', name: 'Grooming',     status: 'Brushed thoroughly',                                                               dot: '#16A34A' },
         ],
         friends: [
@@ -5266,7 +5252,7 @@ function ActivitiesScreen({ onNav }) {
       const isBoarding = bk.service === 'Boarding';
       const visibleSections = isBoarding
         ? rep.sections
-        : rep.sections.filter(s => !['Sleep', 'Breakfast', 'Dinner', 'Potty breaks'].includes(s.name));
+        : rep.sections.filter(s => s.name !== 'Sleep' && s.name !== 'Breakfast');
       return (
         <div style={{ background: '#F5F6FA', minHeight: '100%', paddingBottom: 110, fontFamily: F }}>
           {/* Back button */}
@@ -5299,6 +5285,14 @@ function ActivitiesScreen({ onNav }) {
 
           <div style={{ padding: '14px 20px 0' }}>
 
+            {/* Overall banner */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: rep.overall.bg, color: rep.overall.color, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+              <span style={{ fontSize: 28, flexShrink: 0 }}>{rep.overall.emoji}</span>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', opacity: .7, marginBottom: 3, fontFamily: F }}>Overall</div>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: F }}>{rep.overall.text}</div>
+              </div>
+            </div>
 
             {/* Section cards — filtered by service type */}
             {visibleSections.map((s, i) => (
@@ -5802,6 +5796,7 @@ function ActivitiesScreen({ onNav }) {
         rapportDaycare: { date: '17 Mar 2026', badge: '⭐ Fantastic', badgeBg: '#FEF3C7', badgeColor: '#92400E', items: [
           { icon: '🦮', name: 'Walk',      status: 'Able to walk well with the pack and focus on handler',    dot: '#16A34A' },
           { icon: '☀️', name: 'Lunch',     status: 'Calm and finished all the food',                           dot: '#16A34A' },
+          { icon: '🍽️', name: 'Dinner',    status: 'Calm but had some food left in the bowl',                 dot: '#4ADE80' },
           { icon: '🎾', name: 'Free Time', status: 'Very playful and engaged with other dogs throughout',     dot: '#16A34A' },
           { icon: '🛏️', name: 'Nap Time',  status: 'Had to be directed onto cot but relaxed once on it',     dot: '#FFB703' },
           { icon: '✂️', name: 'Grooming',  status: 'Clean paws and face',                                     dot: '#4ADE80' },
@@ -5850,6 +5845,7 @@ function ActivitiesScreen({ onNav }) {
         rapportDaycare: { date: '21 Mar 2026', badge: '✨ Calm & gorgeous', badgeBg: '#D1FAE5', badgeColor: '#065F46', items: [
           { icon: '🦮', name: 'Walk',      status: 'Able to walk fairly but also a little distracted',                       dot: '#4ADE80' },
           { icon: '☀️', name: 'Lunch',     status: 'Needed a few redirections but finished all the food',                    dot: '#FFB703' },
+          { icon: '🍽️', name: 'Dinner',    status: 'Calm and finished all the food',                                         dot: '#16A34A' },
           { icon: '🎾', name: 'Free Time', status: 'Mostly explored on its own but welcomed interactions',                   dot: '#4ADE80' },
           { icon: '🛏️', name: 'Nap Time',  status: 'Able to go on cot and relax throughout',                                dot: '#16A34A' },
           { icon: '✂️', name: 'Grooming',  status: 'Brushed thoroughly',                                                     dot: '#16A34A' },
@@ -5888,6 +5884,7 @@ function ActivitiesScreen({ onNav }) {
         rapportDaycare: { date: '12 Mar 2026', badge: '🌸 Warming up', badgeBg: '#EDE9FE', badgeColor: '#4C1D95', items: [
           { icon: '🦮', name: 'Walk',      status: 'Often got distracted and had to redirect back',                     dot: '#F97316' },
           { icon: '☀️', name: 'Lunch',     status: 'Took a long time to settle and finished all the food',              dot: '#FFB703' },
+          { icon: '🍽️', name: 'Dinner',    status: 'Took a long time to settle, had some food left',                   dot: '#F97316' },
           { icon: '🎾', name: 'Free Time', status: 'Still unsure, observed other dogs from a distance',                 dot: '#F97316' },
           { icon: '🛏️', name: 'Nap Time',  status: 'Hard time settling, needed leash assistance',                      dot: '#E11D48' },
           { icon: '✂️', name: 'Grooming',  status: 'Applied ointments / special treatments as requested',              dot: '#FFB703' },
@@ -5986,7 +5983,6 @@ function ActivitiesScreen({ onNav }) {
             { icon: '🍽️', name: 'Dinner',       status: 'Calm but had some food left in the bowl',                               dot: '#4ADE80' },
             { icon: '🎾', name: 'Free Time',    status: 'Very playful and engaged with other dogs throughout the day',           dot: '#16A34A' },
             { icon: '🛏️', name: 'Nap Time',     status: 'Had to be directed onto cot / crate but relaxed once on it',           dot: '#FFB703' },
-            { icon: '🚽', name: 'Potty breaks',  status: 'Taken out on schedule — no accidents overnight',   dot: '#16A34A' },
             { icon: '✂️', name: 'Grooming',     status: 'Clean paws and face',                                                   dot: '#4ADE80' },
           ],
           friends: [
@@ -6004,7 +6000,6 @@ function ActivitiesScreen({ onNav }) {
             { icon: '🍽️', name: 'Dinner',       status: 'Calm and finished all the food',                                                                      dot: '#16A34A' },
             { icon: '🎾', name: 'Free Time',    status: 'Mostly explored on its own but welcomed interactions from other dogs',                               dot: '#4ADE80' },
             { icon: '🛏️', name: 'Nap Time',     status: 'Able to go on cot / crate and relax throughout',                                                     dot: '#16A34A' },
-            { icon: '🚽', name: 'Potty breaks',  status: 'Regular breaks, all done outside',   dot: '#16A34A' },
             { icon: '✂️', name: 'Grooming',     status: 'Brushed thoroughly',                                                                                  dot: '#16A34A' },
           ],
           friends: [
@@ -6020,7 +6015,6 @@ function ActivitiesScreen({ onNav }) {
             { icon: '🍽️', name: 'Dinner',       status: 'Took a long time to settle and had some food left in the bowl',                        dot: '#F97316' },
             { icon: '🎾', name: 'Free Time',    status: 'Still unsure and observed other dogs from a distance',                                 dot: '#F97316' },
             { icon: '🛏️', name: 'Nap Time',     status: 'Had a hard time being directed onto cot and needed a leash to help settle down',      dot: '#E11D48' },
-            { icon: '🚽', name: 'Potty breaks',  status: 'One small accident overnight, otherwise on track',   dot: '#FFB703' },
             { icon: '✂️', name: 'Grooming',     status: 'Applied ointments / special treatments (as requested)',                                dot: '#FFB703' },
           ],
           friends: [],
@@ -6036,7 +6030,6 @@ function ActivitiesScreen({ onNav }) {
             { icon: '🍽️', name: 'Dinner',       status: 'Calm and finished all the food',                            dot: '#16A34A' },
             { icon: '🎾', name: 'Free Time',    status: 'Very playful and engaged with other dogs throughout the day', dot: '#16A34A' },
             { icon: '🛏️', name: 'Nap Time',     status: 'Able to go on cot / crate and relax throughout',           dot: '#16A34A' },
-            { icon: '🚽', name: 'Potty breaks',  status: 'Taken out on schedule — no accidents overnight',   dot: '#16A34A' },
             { icon: '✂️', name: 'Grooming',     status: 'Brushed thoroughly',                                        dot: '#16A34A' },
           ],
           friends: [
@@ -6070,8 +6063,16 @@ function ActivitiesScreen({ onNav }) {
             </div>
           </div>
           <div style={{ padding: '14px 20px 0' }}>
-            {/* Category cards — filtered by service type */}
-            {(rep.rapportType === 'daycare' ? rep.sections.filter(s => !['Sleep', 'Breakfast', 'Dinner', 'Potty breaks'].includes(s.name)) : rep.sections).map((s, i) => (
+            {/* Overall banner */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: rep.overall.bg, color: rep.overall.color, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+              <span style={{ fontSize: 28, flexShrink: 0 }}>{rep.overall.emoji}</span>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', opacity: .7, marginBottom: 3, fontFamily: F }}>Overall</div>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: F }}>{rep.overall.text}</div>
+              </div>
+            </div>
+            {/* 8 category cards */}
+            {(rep.rapportType === 'daycare' ? rep.sections.filter(s => s.name !== 'Sleep' && s.name !== 'Breakfast') : rep.sections).map((s, i) => (
               <div key={i} style={{ background: '#fff', borderRadius: 14, padding: '12px 14px', marginBottom: 8, boxShadow: shadow, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{s.icon}</span>
                 <div style={{ flex: 1 }}>
